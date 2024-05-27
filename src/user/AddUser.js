@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { userAdded } from "./userSlice";
-import Button from "react-bootstrap/Button";
+import { Button, Form } from "react-bootstrap";
 
+import { useDispatch } from "react-redux";
+import { userAdded } from "../features/userSlice";
+
+import ListUser from "./ListUser";
 const topics = [
   { id: 1, topic: "Travel" },
   { id: 2, topic: "Cars" },
@@ -11,88 +13,124 @@ const topics = [
   { id: 5, topic: "Other" },
 ];
 
-const AddUserForm = () => {
+function AddUser() {
+  
   const dispatch = useDispatch();
-  const [name, setName] = useState("");
-  const [surname, setSurname] = useState("");
-  const [topic, setTopic] = useState("");
-  const [other, setOther] = useState("");
 
-  const onNameChanged = (e) => setName(e.target.value);
-  const onSurnameChanged = (e) => setSurname(e.target.value);
-  const onTopicChanged = (e) => setTopic(e.target.value);
-  const onOtherChanged = (e) => setOther(e.target.value);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    surname: "",
+    topic: "",
+    other: "",
+  });
+  const { name, surname, topic, other } = form;
+
+  const resetForm = () => {
+    setForm({
+      name: "",
+      surname: "",
+      topic: "",
+      other: "",
+    });
+  };
 
   const canSave = Boolean(name) && Boolean(surname) && Boolean(topic);
-
-  const onSaveUserClicked = () => {
-    if (topic !== "Other" && canSave) {
-      dispatch(userAdded({ name: name, surname: surname, search: topic }));
-      setName("");
-      setSurname("");
-      setTopic("");
-      setOther("");
-    } else {
-      dispatch(userAdded({ name: name, surname: surname, search: other }));
-      setName("");
-      setSurname("");
-      setTopic("");
-      setOther("");
+  const handleSelection = () => {
+    try {
+      if (topic !== "Other" && canSave) {
+        setErrorMsg("");
+        setLoading(true);
+        dispatch(userAdded({ name: name, surname: surname, search: topic }));
+        resetForm();
+        setLoading(false);
+      } else {
+        setErrorMsg("");
+        setLoading(true);
+        dispatch(userAdded({ name: name, surname: surname, search: other }));
+        resetForm();
+        setLoading(false);
+      }
+    } catch (error) {
+      setErrorMsg("Error fetching images. Try again later.");
+      console.log(error);
+      setLoading(false);
     }
   };
 
   const usersOptions = topics?.map((user) => (
-    <option key={user.id} value={user.topic}>
+    <option key={user.id} value={user.topic} name="topic">
       {user.topic}
     </option>
   ));
 
-  return (
-    <section>
-      <h2>Image Finder...!!!</h2>
-      <form>
-        <label htmlFor="postTitle">Name:</label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={name}
-          onChange={onNameChanged}
-        />
-        <label htmlFor="postTitle">surname:</label>
-        <input
-          type="text"
-          id="surname"
-          name="surname"
-          value={surname}
-          onChange={onSurnameChanged}
-        />
-        <label htmlFor="topics">Topics:</label>
-        <select id="topics" value={topic} onChange={onTopicChanged}>
-          <option value=""></option>
-          {usersOptions}
-        </select>
-        {topic === "Other" && (
-          <input
-            type="text"
-            id="other"
-            name="other"
-            value={other}
-            onChange={onOtherChanged}
-          />
-        )}
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((prevState) => ({ ...prevState, [name]: value }));
+  };
 
-        <Button
-          variant="primary"
-          type="button"
-          onClick={onSaveUserClicked}
-          disabled={!canSave}
-          className="mt-2"
-        >
-          Find Image
-        </Button>
-      </form>
-    </section>
+  return (
+    <div className="container">
+      <h1 className="title">Image Finder...!</h1>
+      {errorMsg && <p className="error-msg">{errorMsg}</p>}
+      {loading && <p>Loading...</p>}
+      <>
+        <div className="search-section">
+          <Form>
+            <Form.Control
+              type="text"
+              placeholder="Please Enter Your Name..."
+              className="search-input"
+              name="name"
+              value={name}
+              onChange={handleChange}
+            />
+            <br />
+            <Form.Control
+              type="text"
+              placeholder="Please Enter Your Surname..."
+              className="search-input"
+              name="surname"
+              value={surname}
+              onChange={handleChange}
+            />
+            <br />
+            <Form.Select
+              aria-label="Default select example"
+              onChange={handleChange}
+              name="topic"
+              value={topic}
+            >
+              <option value="" name=""></option>
+              {usersOptions}
+            </Form.Select>
+            <br />
+            {topic === "Other" && (
+              <Form.Control
+                type="text"
+                placeholder="Type something to search"
+                className="search-input"
+                name="other"
+                value={other}
+                onChange={handleChange}
+              />
+            )}
+          </Form>
+        </div>
+        <div className="filters">
+          <Button
+            type="button"
+            onClick={() => handleSelection()}
+            disabled={!canSave}
+          >
+            Find Images
+          </Button>
+        </div>
+      </>
+      <ListUser />
+    </div>
   );
-};
-export default AddUserForm;
+}
+
+export default AddUser;
